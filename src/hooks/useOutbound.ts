@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { outboundService } from '@/services/outbound.service'
-import type { CourierCode, OutboundOrderStatus, PickAssignConfig, WaveType } from '@/types/outbound'
+import type { CourierCode, OutboundOrderStatus, PickAssignConfig, PickException, WaveType } from '@/types/outbound'
 
 const keys = {
   all: ['outbound'] as const,
@@ -85,11 +85,33 @@ export function useCreateWave() {
   })
 }
 
+export function useCreateAndReleaseWave() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: {
+      name: string
+      type: WaveType
+      orderIds: string[]
+      zoneFilter?: string | null
+      scheduledAt?: string | null
+    }) => outboundService.createAndReleaseWave(input),
+    onSuccess: () => invalidateOutbound(qc),
+  })
+}
+
 export function useReleaseWave() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (waveId: string) => outboundService.releaseWave(waveId),
     onSuccess: () => invalidateOutbound(qc),
+  })
+}
+
+export function useOutboundFlowSummary() {
+  return useQuery({
+    queryKey: [...keys.all, 'flowSummary'],
+    queryFn: () => outboundService.getOutboundFlowSummary(),
+    refetchInterval: 4000,
   })
 }
 
@@ -142,7 +164,17 @@ export function usePickExceptions() {
 export function useRaiseException() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: outboundService.raiseException,
+    mutationFn: (p: {
+      pickListId: string
+      stopId: string
+      orderId: string
+      orderNumber: string
+      lineId: string
+      sku: string
+      type: PickException['type']
+      notes: string
+      raisedBy: string
+    }) => outboundService.raiseException(p),
     onSuccess: () => invalidateOutbound(qc),
   })
 }
@@ -252,7 +284,8 @@ export function useFieldExecutives() {
 export function useAssignBagToFe() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (p: { bagId: string; feId: string }) => outboundService.assignBagToFe(p.bagId, p.feId),
+    mutationFn: (p: { bagId: string; feId: string; feBayId?: string }) =>
+      outboundService.assignBagToFe(p.bagId, p.feId, p.feBayId),
     onSuccess: () => invalidateOutbound(qc),
   })
 }
@@ -260,7 +293,8 @@ export function useAssignBagToFe() {
 export function useReleaseBagToFe() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (bagId: string) => outboundService.releaseBagToFe(bagId),
+    mutationFn: (p: { bagId: string; feBayId?: string }) =>
+      outboundService.releaseBagToFe(p.bagId, p.feBayId),
     onSuccess: () => invalidateOutbound(qc),
   })
 }

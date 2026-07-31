@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '@/layout/PageHeader'
 import { DataTable, type DataColumn } from '@/components/enterprise/DataTable'
 import { Breadcrumbs, SideDrawer, StatusBadge, StatusTimeline, orderStatusTone } from '@/components/enterprise/OutboundUi'
+import { OutboundChrome } from '@/components/enterprise/OutboundChrome'
 import { useAutoAllocate, useOutboundOrders } from '@/hooks/useOutbound'
 import { ORDER_STATUS_LABELS, type OutboundOrder, type OutboundOrderStatus } from '@/types/outbound'
 import { formatMoney } from '@/lib/cn'
@@ -121,6 +122,12 @@ export function OrdersPage() {
         }
       />
 
+      <OutboundChrome
+        what="Browse outbound orders and bulk-allocate open ones."
+        doNow="Filter by status, open a row for timeline, or allocate selected OPEN orders."
+        nextLabel="Next: Allocation"
+        nextTo="/outbound/allocation"
+      >
       <DataTable
         rows={data}
         columns={columns}
@@ -211,6 +218,7 @@ export function OrdersPage() {
           </div>
         ) : null}
       </SideDrawer>
+      </OutboundChrome>
     </div>
   )
 }

@@ -1,19 +1,27 @@
 import { useEffect, useMemo, useState } from 'react'
 import { PageHeader } from '@/layout/PageHeader'
 import { Breadcrumbs, StatusBadge } from '@/components/enterprise/OutboundUi'
-import { useConfirmPickStop, usePickLists, useRaiseException } from '@/hooks/useOutbound'
+import { OutboundChrome } from '@/components/enterprise/OutboundChrome'
+import { useConfirmPickStop, useOutboundOrders, usePickLists, useRaiseException } from '@/hooks/useOutbound'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useToastStore } from '@/store/useToastStore'
 import { cn } from '@/lib/cn'
-import type { PickList } from '@/types/outbound'
+import type { PickList, PickStopOutcome } from '@/types/outbound'
 
 function listProgress(pl: PickList) {
-  const done = pl.stops.filter((s) => s.done).length
+  const done = pl.stops.filter((s) => s.outcome !== 'open').length
   return { done, total: pl.stops.length }
+}
+
+function stopBadge(outcome: PickStopOutcome): { label: string; tone: 'slate' | 'green' | 'amber' } {
+  if (outcome === 'picked') return { label: 'Picked', tone: 'green' }
+  if (outcome === 'excepted') return { label: 'Excepted', tone: 'amber' }
+  return { label: 'Open', tone: 'slate' }
 }
 
 export function PickingPage() {
   const listsQ = usePickLists()
+  const ordersQ = useOutboundOrders()
   const confirm = useConfirmPickStop()
   const raise = useRaiseException()
   const toast = useToastStore((s) => s.push)
@@ -23,6 +31,12 @@ export function PickingPage() {
 
   const [showComplete, setShowComplete] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  const orderNumberById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const o of ordersQ.data ?? []) map.set(o.id, o.orderNumber)
+    return map
+  }, [ordersQ.data])
 
   const activeLists = useMemo(
     () => (listsQ.data ?? []).filter((p) => p.status === 'ASSIGNED' || p.status === 'IN_PROGRESS'),
@@ -50,7 +64,7 @@ export function PickingPage() {
 
   const active = visibleLists.find((p) => p.id === selectedId) ?? null
   const { done, total } = active ? listProgress(active) : { done: 0, total: 0 }
-  const next = active?.stops.find((s) => !s.done)
+  const next = active?.stops.find((s) => s.outcome === 'open')
 
   return (
     <div>
@@ -66,6 +80,12 @@ export function PickingPage() {
         }
       />
 
+      <OutboundChrome
+        what="Walk open stops: confirm pick or raise exception (once)."
+        doNow={next ? `Next stop #${next.sequence} at ${next.locationCode}` : 'No open stops on this list — pack when all picked.'}
+        nextLabel="Next: Packing"
+        nextTo="/outbound/packing"
+      >
       <div className="mb-6 flex flex-wrap gap-2">
         {visibleLists.length === 0 ? (
           <p className="text-sm text-slate-500">No active pick lists — check back when waves are released.</p>
@@ -135,10 +155,10 @@ export function PickingPage() {
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               type="button"
-              className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white"
-              disabled={confirm.isPending}
+              className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              disabled={confirm.isPending || next.outcome !== 'open'}
               onClick={async () => {
-                if (!active) return
+                if (!active || next.outcome !== 'open') return
                 try {
                   await confirm.mutateAsync({ pickListId: active.id, stopId: next.id })
                   toast('Pick confirmed')
@@ -151,20 +171,23 @@ export function PickingPage() {
             </button>
             <button
               type="button"
-              className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700"
-              disabled={raise.isPending}
+              className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-50"
+              disabled={raise.isPending || next.outcome !== 'open'}
               onClick={async () => {
+                if (!active || next.outcome !== 'open') return
                 try {
                   await raise.mutateAsync({
+                    pickListId: active.id,
+                    stopId: next.id,
                     orderId: next.orderId,
-                    orderNumber: next.orderId,
+                    orderNumber: orderNumberById.get(next.orderId) ?? next.orderId,
                     lineId: next.lineId,
                     sku: next.sku,
                     type: 'SHORT_PICK',
                     notes: 'Raised from picking dashboard',
-                    raisedBy: active?.pickerName ?? 'Picker',
+                    raisedBy: active.pickerName ?? 'Picker',
                   })
-                  toast('Exception raised', 'error')
+                  toast('Exception raised — stop removed from queue', 'error')
                 } catch (e) {
                   toast((e as Error).message, 'error')
                 }
@@ -195,12 +218,13 @@ export function PickingPage() {
                     {s.sku} · Rack {s.rack} / Shelf {s.shelf} / Bin {s.bin} · qty {s.qtyPicked}/{s.qty}
                   </p>
                 </div>
-                <StatusBadge label={s.done ? 'Done' : 'Open'} tone={s.done ? 'green' : 'slate'} />
+                <StatusBadge {...stopBadge(s.outcome)} />
               </li>
             ))}
           </ul>
         </section>
       ) : null}
+      </OutboundChrome>
     </div>
   )
 }

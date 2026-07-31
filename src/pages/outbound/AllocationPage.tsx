@@ -1,5 +1,6 @@
 import { PageHeader } from '@/layout/PageHeader'
 import { Breadcrumbs, StatusBadge } from '@/components/enterprise/OutboundUi'
+import { OutboundChrome } from '@/components/enterprise/OutboundChrome'
 import { useAllocationRules, useAutoAllocate, useManualAllocate, useOutboundOrders } from '@/hooks/useOutbound'
 import { useToastStore } from '@/store/useToastStore'
 
@@ -16,7 +17,7 @@ export function AllocationPage() {
       <Breadcrumbs items={[{ label: 'Outbound' }, { label: 'Allocation' }]} />
       <PageHeader
         title="Allocation"
-        description="Auto and manual inventory allocation with zone rules and availability."
+        description="Reserve inventory locations for open orders before sending them to pick."
         actions={
           <button
             type="button"
@@ -35,6 +36,16 @@ export function AllocationPage() {
         }
       />
 
+      <OutboundChrome
+        what="Allocate stock locations to open orders."
+        doNow={
+          (openQ.data?.length ?? 0)
+            ? `${openQ.data!.length} open order(s) need allocation.`
+            : 'No open orders — send allocated ones to pick.'
+        }
+        nextLabel="Next: Send to pick"
+        nextTo="/outbound/waves"
+      >
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="surface-card p-5 lg:col-span-1">
           <h2 className="font-heading text-base">Allocation rules</h2>
@@ -113,6 +124,7 @@ export function AllocationPage() {
           </ul>
         </section>
       </div>
+      </OutboundChrome>
     </div>
   )
 }

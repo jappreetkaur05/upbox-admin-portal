@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { PageHeader } from '@/layout/PageHeader'
 import { DataTable, type DataColumn } from '@/components/enterprise/DataTable'
 import { Breadcrumbs, SideDrawer, StatusBadge } from '@/components/enterprise/OutboundUi'
+import { OutboundChrome } from '@/components/enterprise/OutboundChrome'
 import { usePickExceptions, useResolveException } from '@/hooks/useOutbound'
 import { EXCEPTION_LABELS, type PickException } from '@/types/outbound'
 import { useToastStore } from '@/store/useToastStore'
@@ -42,8 +43,18 @@ export function PickExceptionsPage() {
       <Breadcrumbs items={[{ label: 'Outbound' }, { label: 'Pick exceptions' }]} />
       <PageHeader
         title="Pick exceptions"
-        description="Out of stock, wrong item, damaged, missing inventory, and short-pick replacement workflows."
+        description="Resolve short picks and replacements. Resolved lines can get a new pick stop."
       />
+      <OutboundChrome
+        what="Fix exceptioned lines so picking can continue."
+        doNow={
+          (q.data ?? []).filter((e) => e.status === 'OPEN' || e.status === 'REPLACING').length
+            ? 'Open exceptions need resolve or replacement.'
+            : 'No open exceptions.'
+        }
+        nextLabel="Back to Picking"
+        nextTo="/outbound/picking"
+      >
       <DataTable
         rows={q.data ?? []}
         columns={columns}
@@ -98,6 +109,7 @@ export function PickExceptionsPage() {
           </div>
         ) : null}
       </SideDrawer>
+      </OutboundChrome>
     </div>
   )
 }

@@ -31,6 +31,7 @@ import type {
   InFieldShipment,
   OutboundActivity,
   OutboundDashboardKpis,
+  OutboundFlowSummary,
   OutboundOrder,
   OutboundOrderStatus,
   PackageOption,
@@ -116,6 +117,7 @@ function buildStop(orderId: string, line: OutboundOrder['lines'][0], sequence: n
     bin,
     sequence,
     done: false,
+    outcome: 'open',
   }
 }
 
@@ -208,6 +210,33 @@ export const outboundService = {
     return { kpis, activity: clone(outboundActivity) }
   },
 
+  async getOutboundFlowSummary(): Promise<OutboundFlowSummary> {
+    await delay(100)
+    return {
+      openOrders: outboundOrders.filter((o) => o.status === 'OPEN').length,
+      toAllocate: outboundOrders.filter((o) => o.status === 'OPEN').length,
+      allocated: outboundOrders.filter((o) => o.status === 'ALLOCATED').length,
+      draftWaves: waves.filter((w) => w.status === 'DRAFT').length,
+      openPickStops: pickLists
+        .filter((p) => p.status === 'ASSIGNED' || p.status === 'IN_PROGRESS')
+        .reduce((n, p) => n + p.stops.filter((s) => s.outcome === 'open').length, 0),
+      openExceptions: pickExceptions.filter((e) => e.status === 'OPEN' || e.status === 'REPLACING').length,
+      toPack: outboundOrders.filter((o) => o.status === 'PICKED').length,
+      packing: outboundOrders.filter((o) => o.status === 'PACKING').length,
+      toLabel: outboundOrders.filter(
+        (o) =>
+          (o.status === 'PACKED' || o.status === 'READY') &&
+          !shippingLabels.some((l) => l.orderId === o.id)
+      ).length,
+      readyToBag: outboundOrders.filter((o) => o.status === 'READY' && o.routeId).length,
+      sealedBags: routeBags.filter((b) => b.status === 'SEALED').length,
+      pendingFeCheckIn: feCheckIns.filter((c) => c.status === 'PENDING').length,
+      verifiedFes: feCheckIns.filter((c) => c.status === 'VERIFIED').length,
+      assignedBags: routeBags.filter((b) => b.status === 'ASSIGNED').length,
+      inField: inFieldShipments.filter((s) => s.status !== 'DELIVERED' && s.status !== 'RETURNED').length,
+    }
+  },
+
   async listOrders(filters?: { status?: OutboundOrderStatus | 'ALL'; q?: string }): Promise<OutboundOrder[]> {
     await delay()
     let rows = [...outboundOrders]
@@ -288,6 +317,14 @@ export const outboundService = {
     scheduledAt?: string | null
   }): Promise<Wave> {
     await delay()
+    if (!input.orderIds.length) throw new Error('Select at least one allocated order')
+    for (const id of input.orderIds) {
+      const o = outboundOrders.find((x) => x.id === id)
+      if (!o) throw new Error(`Order ${id} not found`)
+      if (o.status !== 'ALLOCATED' && o.status !== 'OPEN') {
+        throw new Error(`${o.orderNumber} is ${o.status} — only allocated orders can join a wave`)
+      }
+    }
     const wave: Wave = {
       id: `wave-${Date.now()}`,
       name: input.name,
@@ -311,6 +348,23 @@ export const outboundService = {
       }
     }
     return clone(wave)
+  },
+
+  async createAndReleaseWave(input: {
+    name: string
+    type: WaveType
+    orderIds: string[]
+    zoneFilter?: string | null
+    scheduledAt?: string | null
+  }): Promise<{ wave: Wave; pickLists: PickList[] }> {
+    const wave = await this.createWave(input)
+    const released = await this.releaseWave(wave.id)
+    const lists = pickLists.filter((p) => p.waveId === released.id)
+    // Ensure lists are assigned even if auto-assign was off
+    for (const pl of lists) {
+      if (!pl.pickerId) assignPickList(pl)
+    }
+    return { wave: clone(released), pickLists: clone(lists) }
   },
 
   async releaseWave(waveId: string): Promise<Wave> {
@@ -417,8 +471,14 @@ export const outboundService = {
     if (!pl) throw new Error('Pick list not found')
     const stop = pl.stops.find((s) => s.id === stopId)
     if (!stop) throw new Error('Stop not found')
+    if (stop.outcome !== 'open') {
+      throw new Error(
+        stop.outcome === 'picked' ? 'Stop already confirmed as picked' : 'Stop already raised as exception'
+      )
+    }
     stop.qtyPicked = stop.qty
     stop.done = true
+    stop.outcome = 'picked'
     pl.status = 'IN_PROGRESS'
 
     const order = outboundOrders.find((o) => o.id === stop.orderId)
@@ -428,15 +488,19 @@ export const outboundService = {
         line.qtyPicked = line.qty
         line.status = 'PICKED'
       }
-      if (order.lines.every((l) => l.qtyPicked >= l.qty)) {
+      const allPicked = order.lines.every((l) => l.status === 'PICKED')
+      const allSettled = order.lines.every((l) => l.status === 'PICKED' || l.status === 'EXCEPTION')
+      if (allPicked) {
         order.status = 'PICKED'
         pushTimeline(order, 'Pick complete')
+      } else if (allSettled) {
+        order.status = 'ON_HOLD'
       } else {
         order.status = 'PICKING'
       }
     }
 
-    if (pl.stops.every((s) => s.done)) pl.status = 'COMPLETE'
+    if (pl.stops.every((s) => s.outcome !== 'open')) pl.status = 'COMPLETE'
     return clone(pl)
   },
 
@@ -445,18 +509,51 @@ export const outboundService = {
     return clone(pickExceptions)
   },
 
-  async raiseException(
-    input: Omit<PickException, 'id' | 'raisedAt' | 'status' | 'replacementSku'>
-  ): Promise<PickException> {
+  async raiseException(input: {
+    pickListId: string
+    stopId: string
+    orderId: string
+    orderNumber: string
+    lineId: string
+    sku: string
+    type: PickException['type']
+    notes: string
+    raisedBy: string
+  }): Promise<PickException> {
     await delay()
+    const pl = pickLists.find((p) => p.id === input.pickListId)
+    if (!pl) throw new Error('Pick list not found')
+    const stop = pl.stops.find((s) => s.id === input.stopId)
+    if (!stop) throw new Error('Stop not found')
+    if (stop.outcome !== 'open') {
+      throw new Error(
+        stop.outcome === 'picked' ? 'Stop already confirmed as picked' : 'Exception already raised for this product'
+      )
+    }
+    const existing = pickExceptions.find(
+      (e) => e.lineId === input.lineId && (e.status === 'OPEN' || e.status === 'REPLACING')
+    )
+    if (existing) throw new Error('Exception already open for this product line')
+
+    stop.done = true
+    stop.outcome = 'excepted'
+    pl.status = 'IN_PROGRESS'
+
     const ex: PickException = {
-      ...input,
       id: `ex-${Date.now()}`,
+      orderId: input.orderId,
+      orderNumber: input.orderNumber,
+      lineId: input.lineId,
+      sku: input.sku,
+      type: input.type,
+      notes: input.notes,
+      raisedBy: input.raisedBy,
       raisedAt: new Date().toISOString(),
       status: 'OPEN',
       replacementSku: null,
     }
     pickExceptions.unshift(ex)
+
     const order = outboundOrders.find((o) => o.id === input.orderId)
     if (order) {
       order.status = 'ON_HOLD'
@@ -464,6 +561,8 @@ export const outboundService = {
       if (line) line.status = 'EXCEPTION'
       pushTimeline(order, 'Pick exception', input.type, input.raisedBy)
     }
+
+    if (pl.stops.every((s) => s.outcome !== 'open')) pl.status = 'COMPLETE'
     pushActivity(`Exception on ${input.orderNumber} (${input.type})`, 'warn')
     return clone(ex)
   },
@@ -472,17 +571,46 @@ export const outboundService = {
     await delay()
     const ex = pickExceptions.find((e) => e.id === id)
     if (!ex) throw new Error('Exception not found')
+    if (ex.status === 'RESOLVED' || ex.status === 'CANCELLED') {
+      throw new Error('Exception already closed')
+    }
     ex.status = 'RESOLVED'
     ex.replacementSku = replacementSku ?? ex.sku
+
     const order = outboundOrders.find((o) => o.id === ex.orderId)
     if (order) {
-      order.status = 'PICKING'
       const line = order.lines.find((l) => l.id === ex.lineId)
       if (line) {
         line.status = 'ALLOCATED'
-        if (replacementSku) line.sku = replacementSku
+        line.qtyPicked = 0
+        if (replacementSku) {
+          line.sku = replacementSku
+          line.barcode = `BC-${replacementSku}`
+        }
       }
+      order.status = 'PICKING'
       pushTimeline(order, 'Exception resolved', replacementSku ? `Replacement ${replacementSku}` : undefined)
+
+      // Keep original stop as excepted; append a new open stop so picking can continue
+      if (line) {
+        let targetList =
+          pickLists.find(
+            (p) =>
+              (p.status === 'ASSIGNED' || p.status === 'IN_PROGRESS') &&
+              p.stops.some((s) => s.orderId === order.id && s.lineId === line.id)
+          ) ?? pickLists.find((p) => p.status === 'ASSIGNED' || p.status === 'IN_PROGRESS')
+
+        if (targetList) {
+          const newStop = buildStop(order.id, line, targetList.stops.length + 1)
+          if (replacementSku) {
+            newStop.sku = replacementSku
+            newStop.barcode = `BC-${replacementSku}`
+            newStop.name = line.name
+          }
+          targetList.stops.push(newStop)
+          if (targetList.status === 'COMPLETE') targetList.status = 'IN_PROGRESS'
+        }
+      }
     }
     return clone(ex)
   },
@@ -519,6 +647,9 @@ export const outboundService = {
     const station = packStations.find((s) => s.id === stationId)
     const order = outboundOrders.find((o) => o.id === orderId)
     if (!station || !order) throw new Error('Station or order not found')
+    if (order.status !== 'PICKED' && order.status !== 'PACKING') {
+      throw new Error(`Order must be picked before packing (current: ${order.status})`)
+    }
 
     if (station.status === 'OFFLINE') {
       throw new Error(`Station ${station.name} is offline`)
@@ -532,7 +663,7 @@ export const outboundService = {
         `Order ${order.orderNumber} is already packing at ${other?.name ?? order.packStationId}`
       )
     }
-    if (order.packStationId && order.packStationId !== stationId) {
+    if (order.packStationId && order.packStationId !== stationId && order.status === 'PACKING') {
       throw new Error(
         `Order ${order.orderNumber} is assigned to station ${order.packStationId}; clear or finish there first`
       )
@@ -618,6 +749,9 @@ export const outboundService = {
     await delay(350)
     const order = outboundOrders.find((o) => o.id === orderId)
     if (!order) throw new Error('Order not found')
+    if (!['PACKED', 'READY', 'IN_ROUTE_BAG', 'ASSIGNED_TO_FE', 'RELEASED_TO_FE'].includes(order.status)) {
+      throw new Error(`Generate label after packing QC (current: ${order.status})`)
+    }
     const tracking = `UBX${Math.floor(Math.random() * 1e10)
       .toString()
       .padStart(10, '0')}`
@@ -760,19 +894,35 @@ export const outboundService = {
     return clone(fieldExecutives)
   },
 
-  async assignBagToFe(bagId: string, feId: string): Promise<RouteBag> {
+  async assignBagToFe(bagId: string, feId: string, feBayId?: string): Promise<RouteBag> {
     await delay(350)
     const bag = routeBags.find((b) => b.id === bagId)
     const fe = fieldExecutives.find((f) => f.id === feId)
     if (!bag || !fe) throw new Error('Bag or field executive not found')
-    if (bag.status !== 'SEALED' && bag.status !== 'OPEN') {
+    if (bag.status !== 'SEALED') {
       throw new Error(`Bag must be sealed before FE assignment (current: ${bag.status})`)
+    }
+    const verified = feCheckIns.find((c) => c.feId === feId && c.status === 'VERIFIED')
+    if (!verified) {
+      throw new Error('FE must check in and be verified before receiving a bag')
     }
 
     bag.feId = feId
     bag.feName = fe.name
     bag.status = 'ASSIGNED'
     bag.assignedAt = new Date().toISOString()
+
+    if (feBayId) {
+      const bay = feBays.find((b) => b.id === feBayId)
+      if (!bay) throw new Error('Bay not found')
+      if (bay.status !== 'FREE' && bay.feId !== feId) {
+        throw new Error(`Bay ${bay.code} is not free`)
+      }
+      bay.feId = feId
+      bay.status = 'LOADING'
+      if (!bay.bagIds.includes(bagId)) bay.bagIds.push(bagId)
+      bag.feBayId = feBayId
+    }
 
     const handoffParcels: FeHandoffParcel[] = []
     const now = new Date().toISOString()
@@ -782,6 +932,7 @@ export const outboundService = {
       if (!order) continue
       order.feId = feId
       order.status = 'ASSIGNED_TO_FE'
+      if (feBayId) order.feBayId = feBayId
       pushTimeline(order, 'Assigned to FE', fe.name)
 
       handoffParcels.push({
@@ -813,11 +964,18 @@ export const outboundService = {
     await delay(350)
     const bag = routeBags.find((b) => b.id === bagId)
     if (!bag) throw new Error('Route bag not found')
+    if (bag.status !== 'ASSIGNED') throw new Error('Only assigned bags can be released')
     if (!bag.feId) throw new Error('Bag must be assigned to an FE before release')
 
+    const verified = feCheckIns.find((c) => c.feId === bag.feId && c.status === 'VERIFIED')
+    if (!verified) {
+      throw new Error('FE must still be verified before release')
+    }
+
+    const bayId = feBayId ?? bag.feBayId ?? undefined
     const fe = fieldExecutives.find((f) => f.id === bag.feId)
     bag.status = 'RELEASED'
-    if (feBayId) bag.feBayId = feBayId
+    if (bayId) bag.feBayId = bayId
 
     const releasedAt = new Date().toISOString()
 
@@ -825,7 +983,7 @@ export const outboundService = {
       const order = outboundOrders.find((o) => o.id === oid)
       if (!order) continue
       order.status = 'RELEASED_TO_FE'
-      if (feBayId) order.feBayId = feBayId
+      if (bayId) order.feBayId = bayId
       pushTimeline(order, 'Released to FE', fe?.name)
 
       const existing = inFieldShipments.find((s) => s.orderId === oid)
@@ -854,8 +1012,8 @@ export const outboundService = {
       }
     }
 
-    if (feBayId) {
-      const bay = feBays.find((b) => b.id === feBayId)
+    if (bayId) {
+      const bay = feBays.find((b) => b.id === bayId)
       if (bay) {
         bay.feId = bag.feId
         if (!bay.bagIds.includes(bagId)) bay.bagIds.push(bagId)
@@ -869,7 +1027,7 @@ export const outboundService = {
       queueItem.bagCount += 1
       queueItem.parcelCount += bag.orderIds.length
       queueItem.loadedParcels += bag.orderIds.length
-      if (feBayId) queueItem.bayId = feBayId
+      if (bayId) queueItem.bayId = bayId
     }
 
     pushActivity(`Bag ${bag.bagBarcode} released to ${bag.feName}`, 'success')

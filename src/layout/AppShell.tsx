@@ -22,7 +22,6 @@ import {
   Users,
   Warehouse,
   Waves,
-  Container,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useWorker } from '@/hooks/useInbound'
@@ -59,17 +58,14 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/outbound/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['WMS_SUPERVISOR'] },
       { to: '/outbound/orders', label: 'Orders', icon: ListOrdered, roles: ['WMS_SUPERVISOR'] },
       { to: '/outbound/allocation', label: 'Allocation', icon: ScanBarcode, roles: ['WMS_SUPERVISOR'] },
-      { to: '/outbound/waves', label: 'Wave planning', icon: Waves, roles: ['WMS_SUPERVISOR'] },
-      { to: '/outbound/pick-lists', label: 'Pick lists', icon: ClipboardList, roles: ['PICKER', 'WMS_SUPERVISOR'] },
+      { to: '/outbound/waves', label: 'Send to pick', icon: Waves, roles: ['WMS_SUPERVISOR'] },
       { to: '/outbound/picking', label: 'Picking', icon: PackageCheck, roles: ['PICKER', 'WMS_SUPERVISOR'] },
       { to: '/outbound/exceptions', label: 'Exceptions', icon: AlertTriangle, roles: ['PICKER', 'WMS_SUPERVISOR'] },
       { to: '/outbound/packing', label: 'Packing', icon: PackageOpen, roles: ['PACKER', 'WMS_SUPERVISOR'] },
       { to: '/outbound/labels', label: 'Shipping labels', icon: FileText, roles: ['PACKER', 'WMS_SUPERVISOR'] },
       { to: '/outbound/route-bags', label: 'Route bags', icon: Boxes, roles: ['WMS_SUPERVISOR', 'DOCK_DISPATCHER'] },
-      { to: '/outbound/assign-fe', label: 'Assign FE', icon: UserCheck, roles: ['WMS_SUPERVISOR', 'DOCK_DISPATCHER'] },
-      { to: '/outbound/fe-bays', label: 'FE bays', icon: Warehouse, roles: ['WMS_SUPERVISOR', 'DOCK_DISPATCHER'] },
-      { to: '/outbound/fe-load', label: 'FE load', icon: Container, roles: ['WMS_SUPERVISOR', 'DOCK_DISPATCHER'] },
       { to: '/outbound/fe-checkin', label: 'FE check-in', icon: ShieldCheck, roles: ['WMS_SUPERVISOR', 'DOCK_DISPATCHER'] },
+      { to: '/outbound/assign-fe', label: 'Assign FE', icon: UserCheck, roles: ['WMS_SUPERVISOR', 'DOCK_DISPATCHER'] },
       { to: '/outbound/release-fe', label: 'Release to FE', icon: Truck, roles: ['WMS_SUPERVISOR', 'DOCK_DISPATCHER'] },
       { to: '/outbound/in-field', label: 'In-field', icon: PackageSearch, roles: ['WMS_SUPERVISOR'] },
     ],

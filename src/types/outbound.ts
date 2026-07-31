@@ -137,6 +137,8 @@ export interface Wave {
   createdAt: string
 }
 
+export type PickStopOutcome = 'open' | 'picked' | 'excepted'
+
 export interface PickStop {
   id: string
   orderId: string
@@ -151,7 +153,9 @@ export interface PickStop {
   shelf: string
   bin: string
   sequence: number
+  /** True when outcome is picked or excepted — cleared from active next-stop queue */
   done: boolean
+  outcome: PickStopOutcome
 }
 
 export interface PickList {
@@ -315,6 +319,25 @@ export interface OutboundDashboardKpis {
   deliveredToday: number
   slaBreaches: number
   exceptionsOpen: number
+}
+
+/** Pending work counts for pipeline strip + step guides */
+export interface OutboundFlowSummary {
+  openOrders: number
+  toAllocate: number
+  allocated: number
+  draftWaves: number
+  openPickStops: number
+  openExceptions: number
+  toPack: number
+  packing: number
+  toLabel: number
+  readyToBag: number
+  sealedBags: number
+  pendingFeCheckIn: number
+  verifiedFes: number
+  assignedBags: number
+  inField: number
 }
 
 /** Payload written to localStorage for rider app scan catalog merge */

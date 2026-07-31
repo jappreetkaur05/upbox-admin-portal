@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { PageHeader } from '@/layout/PageHeader'
 import { DataTable, type DataColumn } from '@/components/enterprise/DataTable'
 import { Breadcrumbs, StatusBadge } from '@/components/enterprise/OutboundUi'
+import { OutboundChrome } from '@/components/enterprise/OutboundChrome'
 import { useInFieldShipments } from '@/hooks/useOutbound'
 import { formatMoney } from '@/lib/cn'
 import type { InFieldShipment } from '@/types/outbound'
@@ -63,7 +64,7 @@ export function InFieldShipmentsPage() {
       <Breadcrumbs items={[{ label: 'Outbound' }, { label: 'In-field shipments' }]} />
       <PageHeader
         title="In-field shipments"
-        description="Track parcels with field executives — assigned, loaded, delivered, and exceptions."
+        description="Track parcels already released to field executives."
         actions={
           <select
             value={filter}
@@ -79,6 +80,10 @@ export function InFieldShipmentsPage() {
           </select>
         }
       />
+      <OutboundChrome
+        what="Monitor last-mile status after release."
+        doNow="Filter by status to see what’s still out with FEs."
+      >
       <DataTable
         rows={rows}
         columns={columns}
@@ -92,6 +97,7 @@ export function InFieldShipmentsPage() {
           row.trackingNumber.toLowerCase().includes(q)
         }
       />
+      </OutboundChrome>
     </div>
   )
 }

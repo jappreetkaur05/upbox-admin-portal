@@ -519,9 +519,9 @@ export let pickLists: PickList[] = [
     zoneHint: 'B',
     createdAt: hoursAgo(1),
     stops: [
-      { id: 's1', orderId: 'ord-1003', lineId: 'l-1003-1', sku: 'PM-RSX-9', name: 'Puma RS-X 9', barcode: 'BC-PM-RSX-9', qty: 1, qtyPicked: 0, locationCode: 'W.B.R1.B2.1', rack: 'R1', shelf: 'B2', bin: '1', sequence: 1, done: false },
-      { id: 's2', orderId: 'ord-1003', lineId: 'l-1003-2', sku: 'PM-CAP-01', name: 'Puma Classic Cap', barcode: 'BC-PM-CAP-01', qty: 1, qtyPicked: 0, locationCode: 'W.B.R1.B2.4', rack: 'R1', shelf: 'B2', bin: '4', sequence: 2, done: false },
-      { id: 's3', orderId: 'ord-1004', lineId: 'l-1004-1', sku: 'NK-AIR-40', name: 'Nike Air Max 40', barcode: 'BC-NK-AIR-40', qty: 1, qtyPicked: 1, locationCode: 'W.A.R1.B1.3', rack: 'R1', shelf: 'B1', bin: '3', sequence: 3, done: true },
+      { id: 's1', orderId: 'ord-1003', lineId: 'l-1003-1', sku: 'PM-RSX-9', name: 'Puma RS-X 9', barcode: 'BC-PM-RSX-9', qty: 1, qtyPicked: 0, locationCode: 'W.B.R1.B2.1', rack: 'R1', shelf: 'B2', bin: '1', sequence: 1, done: false, outcome: 'open' },
+      { id: 's2', orderId: 'ord-1003', lineId: 'l-1003-2', sku: 'PM-CAP-01', name: 'Puma Classic Cap', barcode: 'BC-PM-CAP-01', qty: 1, qtyPicked: 0, locationCode: 'W.B.R1.B2.4', rack: 'R1', shelf: 'B2', bin: '4', sequence: 2, done: false, outcome: 'open' },
+      { id: 's3', orderId: 'ord-1004', lineId: 'l-1004-1', sku: 'NK-AIR-40', name: 'Nike Air Max 40', barcode: 'BC-NK-AIR-40', qty: 1, qtyPicked: 1, locationCode: 'W.A.R1.B1.3', rack: 'R1', shelf: 'B1', bin: '3', sequence: 3, done: true, outcome: 'picked' },
     ],
   },
   {
@@ -534,8 +534,8 @@ export let pickLists: PickList[] = [
     zoneHint: 'A',
     createdAt: hoursAgo(1),
     stops: [
-      { id: 's5', orderId: 'ord-1004', lineId: 'l-1004-2', sku: 'NK-TEE-L', name: 'Nike Dri-FIT Tee L', barcode: 'BC-NK-TEE-L', qty: 2, qtyPicked: 0, locationCode: 'W.A.R1.B3.2', rack: 'R1', shelf: 'B3', bin: '2', sequence: 1, done: false },
-      { id: 's6', orderId: 'ord-1008', lineId: 'l-1008-1', sku: 'AD-NMD-42', name: 'Adidas NMD R1 42', barcode: 'BC-AD-NMD-42', qty: 1, qtyPicked: 0, locationCode: 'W.A.R2.B3.1', rack: 'R2', shelf: 'B3', bin: '1', sequence: 2, done: false },
+      { id: 's5', orderId: 'ord-1004', lineId: 'l-1004-2', sku: 'NK-TEE-L', name: 'Nike Dri-FIT Tee L', barcode: 'BC-NK-TEE-L', qty: 2, qtyPicked: 0, locationCode: 'W.A.R1.B3.2', rack: 'R1', shelf: 'B3', bin: '2', sequence: 1, done: false, outcome: 'open' },
+      { id: 's6', orderId: 'ord-1008', lineId: 'l-1008-1', sku: 'AD-NMD-42', name: 'Adidas NMD R1 42', barcode: 'BC-AD-NMD-42', qty: 1, qtyPicked: 0, locationCode: 'W.A.R2.B3.1', rack: 'R2', shelf: 'B3', bin: '1', sequence: 2, done: false, outcome: 'open' },
     ],
   },
   {
@@ -559,7 +559,7 @@ export let pickLists: PickList[] = [
     zoneHint: 'B',
     createdAt: hoursAgo(0.4),
     stops: [
-      { id: 's4', orderId: 'ord-1002', lineId: 'l-1002-1', sku: 'AD-ULTRA-10', name: 'Adidas Ultraboost 10', barcode: 'BC-AD-ULTRA-10', qty: 1, qtyPicked: 0, locationCode: 'W.A.R2.B1.2', rack: 'R2', shelf: 'B1', bin: '2', sequence: 1, done: false },
+      { id: 's4', orderId: 'ord-1002', lineId: 'l-1002-1', sku: 'AD-ULTRA-10', name: 'Adidas Ultraboost 10', barcode: 'BC-AD-ULTRA-10', qty: 1, qtyPicked: 0, locationCode: 'W.A.R2.B1.2', rack: 'R2', shelf: 'B1', bin: '2', sequence: 1, done: false, outcome: 'open' },
     ],
   },
 ]

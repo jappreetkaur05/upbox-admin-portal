@@ -7,7 +7,7 @@ export function roleHomePath(roles: string[]): string {
   if (roles.includes('DOCK_RECEIVER')) return '/inbound/dock-receive'
   if (roles.includes('UNPACKER')) return '/inbound/unpack'
   if (roles.includes('PUTAWAY')) return '/inbound/putaway'
-  if (roles.includes('DOCK_DISPATCHER')) return '/outbound/fe-bays'
+  if (roles.includes('DOCK_DISPATCHER')) return '/outbound/fe-checkin'
   if (roles.includes('PACKER')) return '/outbound/packing'
   if (roles.includes('PICKER')) return '/outbound/picking'
   return '/unauthorized'
@@ -17,6 +17,6 @@ export function outboundRoleHomePath(roles: string[]): string {
   if (roles.includes('WMS_SUPERVISOR')) return '/outbound/dashboard'
   if (roles.includes('PICKER')) return '/outbound/picking'
   if (roles.includes('PACKER')) return '/outbound/packing'
-  if (roles.includes('DOCK_DISPATCHER')) return '/outbound/fe-bays'
+  if (roles.includes('DOCK_DISPATCHER')) return '/outbound/fe-checkin'
   return '/outbound/dashboard'
 }
