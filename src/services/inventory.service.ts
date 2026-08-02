@@ -141,6 +141,7 @@ function buildSkuRows(): SkuInventoryRow[] {
     const skuLocations: SkuLocationStock[] = []
     let onHand = 0
     let reserved = 0
+    let damaged = 0
 
     for (const bin of locations) {
       for (const line of bin.lineItems) {
@@ -151,6 +152,7 @@ function buildSkuRows(): SkuInventoryRow[] {
         const reservedQty = isReserved ? line.quantity : 0
         onHand += line.quantity
         reserved += reservedQty
+        if (isDamaged) damaged += line.quantity
         skuLocations.push({
           binrackId: bin.id,
           locationCode: bin.locationCode,
@@ -167,7 +169,7 @@ function buildSkuRows(): SkuInventoryRow[] {
     }
 
     const incoming = incomingMap.get(item.sku) ?? 0
-    const available = Math.max(0, onHand - reserved)
+    const available = Math.max(0, onHand - reserved - damaged)
     const primaryLocation =
       [...skuLocations].sort((a, b) => b.available - a.available)[0]?.locationCode ?? null
 
@@ -186,7 +188,9 @@ function buildSkuRows(): SkuInventoryRow[] {
       onHand,
       reserved,
       available,
+      damaged,
       incoming,
+      total: onHand + incoming,
       locationCount: new Set(skuLocations.map((l) => l.binrackId)).size,
       primaryLocation,
       locations: skuLocations,

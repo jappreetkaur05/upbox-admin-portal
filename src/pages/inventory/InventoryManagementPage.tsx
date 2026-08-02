@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Bell, Search } from 'lucide-react'
 import { BrandTabs } from '@/components/inventory/BrandTabs'
-import { HealthBadge, SourceBadge } from '@/components/inventory/Badges'
+import { HealthBadge } from '@/components/inventory/Badges'
 import { NotifySellerModal } from '@/components/inventory/NotifySellerModal'
 import { SkuDetailPanel } from '@/components/inventory/SkuDetailPanel'
 import { EmptyState, LoadingPanel, PageHeader, StatCard } from '@/components/ui/InventoryPrimitives'
@@ -38,8 +38,8 @@ export function InventoryManagementPage() {
   return (
     <div>
       <PageHeader
-        title="Inventory"
-        description="Browse onboarded brands and SKUs from the seller portal and warehouse putaway. Track on-hand, low stock, incoming, and exact rack / bay locations. For low or critical stock, notify the seller to update inventory."
+        title="Stock Levels"
+        description="Available, reserved, damaged, incoming, and total stock per SKU."
       />
 
       {brandsQ.isLoading || summaryQ.isLoading ? <LoadingPanel label="Loading inventory…" /> : null}
@@ -132,16 +132,17 @@ export function InventoryManagementPage() {
               <EmptyState title="No SKUs match these filters" description="Try another brand or clear search." />
             </div>
           ) : (
-            <table className="w-full min-w-[1080px] text-left text-sm">
+            <table className="w-full min-w-[1200px] text-left text-sm">
               <thead className="border-b bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-3 py-3">Product</th>
                   <th className="px-3 py-3">Brand</th>
-                  <th className="px-3 py-3 text-right">On hand</th>
                   <th className="px-3 py-3 text-right">Available</th>
+                  <th className="px-3 py-3 text-right">Reserved</th>
+                  <th className="px-3 py-3 text-right">Damaged</th>
                   <th className="px-3 py-3 text-right">Incoming</th>
+                  <th className="px-3 py-3 text-right">Total</th>
                   <th className="px-3 py-3">Primary location</th>
-                  <th className="px-3 py-3">Source</th>
                   <th className="px-3 py-3">Health</th>
                   <th className="px-3 py-3">Action</th>
                 </tr>
@@ -166,9 +167,11 @@ export function InventoryManagementPage() {
                         </p>
                       </td>
                       <td className="px-3 py-3 text-slate-700">{row.brandName}</td>
-                      <td className="px-3 py-3 text-right font-semibold">{row.onHand}</td>
-                      <td className="px-3 py-3 text-right">{row.available}</td>
+                      <td className="px-3 py-3 text-right font-semibold text-emerald-800">{row.available}</td>
+                      <td className="px-3 py-3 text-right text-sky-800">{row.reserved}</td>
+                      <td className="px-3 py-3 text-right text-rose-700">{row.damaged || '—'}</td>
                       <td className="px-3 py-3 text-right text-sky-700">{row.incoming || '—'}</td>
+                      <td className="px-3 py-3 text-right font-semibold">{row.total}</td>
                       <td className="px-3 py-3">
                         {row.primaryLocation ? (
                           <span className="font-mono text-xs font-semibold">{row.primaryLocation}</span>
@@ -178,9 +181,6 @@ export function InventoryManagementPage() {
                         {row.locationCount > 1 ? (
                           <span className="ml-1 text-[10px] text-slate-400">+{row.locationCount - 1}</span>
                         ) : null}
-                      </td>
-                      <td className="px-3 py-3">
-                        <SourceBadge source={row.source} />
                       </td>
                       <td className="px-3 py-3">
                         <HealthBadge health={row.health} />

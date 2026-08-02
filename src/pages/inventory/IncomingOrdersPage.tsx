@@ -21,8 +21,8 @@ export function IncomingOrdersPage() {
   return (
     <div>
       <PageHeader
-        title="Incoming"
-        description="Expected FBU / purchase orders into the warehouse — separate from dock receive scanning. Units pending are not yet put away."
+        title="Incoming (Goods Inward)"
+        description="Expected vs received FBU / purchase orders. Units pending are not yet put away; discrepancies show when received differs from expected."
       />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">

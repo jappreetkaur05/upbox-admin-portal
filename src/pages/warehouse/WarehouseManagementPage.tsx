@@ -13,7 +13,6 @@ import {
   InspectionExpandList,
   LocationsTrolleyExpandList,
 } from '@/components/warehouse/LocationExpandLists'
-import { LocationsBrowserPage } from '@/pages/inventory/LocationsBrowserPage'
 import { useBinracks, useHierarchy, useInvalidateInbound, useTrolleyBags } from '@/hooks/useInbound'
 import { warehouseService } from '@/services/inbound.service'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -49,7 +48,7 @@ function matchesCapacity(fill: number, rules: CapacityRule[]): boolean {
   })
 }
 
-type LocationView = 'goods_in' | 'binracks' | 'inspection' | 'trolleys' | 'floor_map'
+type LocationView = 'goods_in' | 'binracks' | 'inspection' | 'trolleys'
 
 export function WarehouseManagementPage() {
   const hasRole = useAuthStore((s) => s.hasRole)
@@ -168,7 +167,10 @@ export function WarehouseManagementPage() {
 
   return (
     <div>
-      <PageHeader title="Locations" />
+      <PageHeader
+        title="Bins / Locations"
+        description="Bin and staging location details — codes, zone, capacity, and fill. Floor map lives under Warehouse Mapping."
+      />
 
       <div className="mb-4 flex flex-wrap gap-2">
         {(
@@ -177,7 +179,6 @@ export function WarehouseManagementPage() {
             { id: 'binracks' as const, label: 'Binracks' },
             { id: 'inspection' as const, label: 'Inspection' },
             { id: 'trolleys' as const, label: 'Trolley / bag' },
-            { id: 'floor_map' as const, label: 'Floor map' },
           ] as const
         ).map((tab) => (
           <button
@@ -202,9 +203,6 @@ export function WarehouseManagementPage() {
         ))}
       </div>
 
-      {view === 'floor_map' ? <LocationsBrowserPage embedded /> : null}
-
-      {view !== 'floor_map' ? (
       <div className="surface-card mb-4 p-3">
         <div className="flex flex-wrap items-center gap-2">
           <input
@@ -362,7 +360,6 @@ export function WarehouseManagementPage() {
           </div>
         </div>
       </div>
-      ) : null}
 
       {toast ? (
         <div className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
@@ -370,11 +367,11 @@ export function WarehouseManagementPage() {
         </div>
       ) : null}
 
-      {view !== 'floor_map' && view !== 'trolleys' && binsQ.isLoading ? (
+      {view !== 'trolleys' && binsQ.isLoading ? (
         <LoadingPanel label="Loading locations…" />
       ) : null}
       {view === 'trolleys' && trolleysQ.isLoading ? <LoadingPanel label="Loading trolleys…" /> : null}
-      {binsQ.error && view !== 'trolleys' && view !== 'floor_map' ? (
+      {binsQ.error && view !== 'trolleys' ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-900">
           {(binsQ.error as Error).message}
         </div>
@@ -431,7 +428,7 @@ export function WarehouseManagementPage() {
       />
 
       <BinrackFormModal
-        open={formMode !== null && isSupervisor && view !== 'trolleys' && view !== 'floor_map'}
+        open={formMode !== null && isSupervisor && view !== 'trolleys'}
         mode={formMode === 'edit' ? 'edit' : 'create'}
         initial={formMode === 'edit' ? selected : null}
         lockedZoneType={lockedZoneType}

@@ -980,6 +980,15 @@ export const inboundService = {
       role === 'DOCK_RECEIVER' || role === 'UNPACKER' || role === 'PUTAWAY'
         ? ['inbound']
         : ['outbound']
+    const teamByRole: Record<Exclude<WorkerRole, 'WMS_SUPERVISOR'>, string> = {
+      DOCK_RECEIVER: 'team-receiving',
+      UNPACKER: 'team-unpack',
+      PUTAWAY: 'team-putaway',
+      PICKER: 'team-picking',
+      PACKER: 'team-packing',
+      DOCK_DISPATCHER: 'team-dispatch',
+    }
+    w.teamId = teamByRole[role]
     refreshWorkerLoads()
     return structuredClone(w)
   },

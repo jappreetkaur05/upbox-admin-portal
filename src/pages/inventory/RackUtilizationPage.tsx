@@ -2,10 +2,13 @@ import { useState } from 'react'
 import { BrandTabs } from '@/components/inventory/BrandTabs'
 import { ZoneBadge } from '@/components/inventory/Badges'
 import { EmptyState, LoadingPanel, PageHeader, StatCard } from '@/components/ui/InventoryPrimitives'
+import { WarehouseScopeBar } from '@/components/warehouse/WarehouseScopeBar'
 import { useBrands, useInventorySummary, useUtilization } from '@/hooks/useInventory'
+import { useWarehouseScope } from '@/hooks/useWarehouseScope'
 import { cn } from '@/lib/cn'
 
 export function RackUtilizationPage() {
+  const { warehouse } = useWarehouseScope()
   const [brandId, setBrandId] = useState('all')
   const [zoneType, setZoneType] = useState<string>('all')
   const [band, setBand] = useState<'all' | 'empty' | 'mid' | 'near_full' | 'full'>('all')
@@ -17,9 +20,11 @@ export function RackUtilizationPage() {
   return (
     <div>
       <PageHeader
-        title="Rack utilization"
-        description="See how full each rack and bay is, which brands own pick slots, and which locations are empty or near capacity."
+        title="Storage Capacity"
+        description={`Fill by rack and bay for ${warehouse?.name ?? 'selected warehouse'}.`}
       />
+
+      <WarehouseScopeBar />
 
       {summaryQ.data ? (
         <div className="mb-4 grid gap-3 sm:grid-cols-3">

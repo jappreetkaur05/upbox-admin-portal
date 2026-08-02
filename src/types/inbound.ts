@@ -189,6 +189,9 @@ export interface WarehouseWorker {
   openProductCount: number
   /** Timed activity log — filter by today / week / month */
   activity: WorkActivityEvent[]
+  status: 'active' | 'inactive' | 'on_leave'
+  teamId: string
+  lastLoginAt?: string
 }
 
 export interface StockMove {

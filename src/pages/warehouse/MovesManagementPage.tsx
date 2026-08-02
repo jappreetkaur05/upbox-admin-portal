@@ -60,7 +60,10 @@ export function MovesManagementPage() {
 
   return (
     <div>
-      <PageHeader title="Moves Management" />
+      <PageHeader
+        title="Stock Transfer"
+        description="Move stock without changing total quantity — warehouse to warehouse, rack to rack, or bin to bin."
+      />
 
       <div className="surface-card mb-4 p-3">
         <div className="flex flex-wrap items-center gap-2">

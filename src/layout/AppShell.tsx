@@ -1,100 +1,22 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import {
-  AlertTriangle,
-  ArrowLeftRight,
-  Boxes,
-  ChartColumn,
-  ClipboardList,
-  FileText,
-  Inbox,
-  LayoutDashboard,
-  ListOrdered,
-  LogOut,
-  Package,
-  PackageCheck,
-  PackageOpen,
-  PackageSearch,
-  Percent,
-  ScanBarcode,
-  ShieldCheck,
-  Truck,
-  UserCheck,
-  Users,
-  Warehouse,
-  Waves,
-} from 'lucide-react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Boxes, ChevronDown, LogOut } from 'lucide-react'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useWorker } from '@/hooks/useInbound'
-import { ALL_FLOOR_ROLES } from '@/routes/roleRoutes'
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ToastHost } from '@/components/ui/ToastHost'
+import { NAV_SECTIONS, type NavSection } from '@/layout/navConfig'
 
-type NavItem = {
-  to: string
-  label: string
-  icon: typeof Truck
-  roles?: string[]
-  end?: boolean
+function sectionContainsPath(section: NavSection, pathname: string): boolean {
+  return section.items.some((item) => {
+    if (item.end) return pathname === item.to
+    return pathname === item.to || pathname.startsWith(`${item.to}/`)
+  })
 }
-
-type NavSection = { id: string; label: string; items: NavItem[] }
-
-const NAV_SECTIONS: NavSection[] = [
-  {
-    id: 'inbound',
-    label: 'Inbound',
-    items: [
-      { to: '/inbound/dashboard', label: 'Overview', icon: LayoutDashboard, roles: ['WMS_SUPERVISOR'] },
-      { to: '/inbound/dock-receive', label: 'Dock Receiving', icon: Truck, roles: ['DOCK_RECEIVER', 'WMS_SUPERVISOR'] },
-      { to: '/inbound/unpack', label: 'Unpack', icon: PackageOpen, roles: ['UNPACKER', 'WMS_SUPERVISOR'] },
-      { to: '/inbound/assign-putaway', label: 'Assign putaway', icon: UserCheck, roles: ['WMS_SUPERVISOR'] },
-      { to: '/inbound/putaway', label: 'Putaway', icon: Package, roles: ['PUTAWAY', 'WMS_SUPERVISOR'] },
-    ],
-  },
-  {
-    id: 'outbound',
-    label: 'Outbound',
-    items: [
-      { to: '/outbound/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['WMS_SUPERVISOR'] },
-      { to: '/outbound/orders', label: 'Orders', icon: ListOrdered, roles: ['WMS_SUPERVISOR'] },
-      { to: '/outbound/allocation', label: 'Allocation', icon: ScanBarcode, roles: ['WMS_SUPERVISOR'] },
-      { to: '/outbound/waves', label: 'Send to pick', icon: Waves, roles: ['WMS_SUPERVISOR'] },
-      { to: '/outbound/picking', label: 'Picking', icon: PackageCheck, roles: ['PICKER', 'WMS_SUPERVISOR'] },
-      { to: '/outbound/exceptions', label: 'Exceptions', icon: AlertTriangle, roles: ['PICKER', 'WMS_SUPERVISOR'] },
-      { to: '/outbound/packing', label: 'Packing', icon: PackageOpen, roles: ['PACKER', 'WMS_SUPERVISOR'] },
-      { to: '/outbound/labels', label: 'Shipping labels', icon: FileText, roles: ['PACKER', 'WMS_SUPERVISOR'] },
-      { to: '/outbound/route-bags', label: 'Route bags', icon: Boxes, roles: ['WMS_SUPERVISOR', 'DOCK_DISPATCHER'] },
-      { to: '/outbound/fe-checkin', label: 'FE check-in', icon: ShieldCheck, roles: ['WMS_SUPERVISOR', 'DOCK_DISPATCHER'] },
-      { to: '/outbound/assign-fe', label: 'Assign FE', icon: UserCheck, roles: ['WMS_SUPERVISOR', 'DOCK_DISPATCHER'] },
-      { to: '/outbound/release-fe', label: 'Release to FE', icon: Truck, roles: ['WMS_SUPERVISOR', 'DOCK_DISPATCHER'] },
-      { to: '/outbound/in-field', label: 'In-field', icon: PackageSearch, roles: ['WMS_SUPERVISOR'] },
-    ],
-  },
-  {
-    id: 'inventory',
-    label: 'Inventory',
-    items: [
-      { to: '/inventory', label: 'Stock', icon: PackageSearch, roles: ['WMS_SUPERVISOR'], end: true },
-      { to: '/inventory/utilization', label: 'Utilization', icon: Percent, roles: ['WMS_SUPERVISOR'] },
-      { to: '/inventory/incoming', label: 'Incoming', icon: Inbox, roles: ['WMS_SUPERVISOR'] },
-      { to: '/warehouse', label: 'Locations', icon: Warehouse, roles: ['WMS_SUPERVISOR'], end: true },
-      { to: '/warehouse/moves', label: 'Moves', icon: ArrowLeftRight, roles: ['WMS_SUPERVISOR'] },
-    ],
-  },
-  {
-    id: 'shared',
-    label: 'Team',
-    items: [
-      { to: '/inbound/workers', label: 'Workers', icon: Users, roles: ['WMS_SUPERVISOR'] },
-      { to: '/inbound/team-work', label: 'Team work', icon: ClipboardList, roles: ['WMS_SUPERVISOR'] },
-      { to: '/inbound/my-work', label: 'My work', icon: ChartColumn, roles: [...ALL_FLOOR_ROLES] },
-    ],
-  },
-]
 
 export function AppShell() {
   const { user, logout, hasAnyRole } = useAuthStore()
   const navigate = useNavigate()
+  const location = useLocation()
   const workerQ = useWorker(user?.workerId)
   const worker = workerQ.data
   const setUserRoles = useAuthStore((s) => s.setUserRoles)
@@ -108,14 +30,44 @@ export function AppShell() {
 
   const isSupervisor = user?.userType === 'SUPER_ADMIN' || hasAnyRole(['WMS_SUPERVISOR'])
 
-  const sections = NAV_SECTIONS.map((section) => ({
-    ...section,
-    items: section.items.filter((item) => {
-      if (!item.roles) return true
-      if (isSupervisor) return true
-      return hasAnyRole(item.roles)
-    }),
-  })).filter((s) => s.items.length > 0)
+  const sections = useMemo(
+    () =>
+      NAV_SECTIONS.map((section) => ({
+        ...section,
+        items: section.items.filter((item) => {
+          if (!item.roles) return true
+          if (isSupervisor) return true
+          return hasAnyRole(item.roles)
+        }),
+      })).filter((s) => s.items.length > 0),
+    [hasAnyRole, isSupervisor]
+  )
+
+  const activeSectionId = useMemo(
+    () => sections.find((s) => sectionContainsPath(s, location.pathname))?.id ?? null,
+    [sections, location.pathname]
+  )
+
+  const [openIds, setOpenIds] = useState<Set<string>>(() => new Set())
+
+  useEffect(() => {
+    if (!activeSectionId) return
+    setOpenIds((prev) => {
+      if (prev.has(activeSectionId)) return prev
+      const next = new Set(prev)
+      next.add(activeSectionId)
+      return next
+    })
+  }, [activeSectionId])
+
+  const toggleSection = (id: string) => {
+    setOpenIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
@@ -128,36 +80,81 @@ export function AppShell() {
           </div>
         </div>
 
-        <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto p-3 scrollbar-thin">
-          {sections.map((section) => (
-            <div key={section.id}>
-              <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                {section.label}
-              </p>
-              <div className="space-y-0.5">
-                {section.items.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <NavLink
-                      key={item.to}
-                      to={item.to}
-                      end={item.end}
-                      className={({ isActive }) =>
-                        `flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                          isActive
-                            ? 'bg-primary-600 text-white'
-                            : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                        }`
-                      }
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <span className="flex-1 truncate">{item.label}</span>
-                    </NavLink>
-                  )
-                })}
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto p-3 scrollbar-thin">
+          {sections.map((section) => {
+            if (section.linkOnly) {
+              const item = section.items[0]
+              if (!item) return null
+              const Icon = section.icon ?? item.icon
+              return (
+                <NavLink
+                  key={section.id}
+                  to={item.to}
+                  end={item.end}
+                  className={({ isActive }) =>
+                    `flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                      isActive
+                        ? 'bg-primary-600 text-white'
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    }`
+                  }
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="flex-1 truncate">{section.label}</span>
+                </NavLink>
+              )
+            }
+
+            const open = openIds.has(section.id)
+            const SectionIcon = section.icon
+            const sectionActive = activeSectionId === section.id
+
+            return (
+              <div key={section.id} className="rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => toggleSection(section.id)}
+                  className={`flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+                    sectionActive
+                      ? 'bg-slate-800 text-white'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                  aria-expanded={open}
+                >
+                  {SectionIcon ? <SectionIcon className="h-4 w-4 shrink-0" /> : null}
+                  <span className="flex-1 truncate">{section.label}</span>
+                  <ChevronDown
+                    className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${open ? 'rotate-0' : '-rotate-90'}`}
+                  />
+                </button>
+
+                {open ? (
+                  <div className="mt-0.5 space-y-0.5 border-l border-slate-700 ml-4 pl-1">
+                    {section.items.map((item) => {
+                      const Icon = item.icon
+                      return (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          end={item.end}
+                          className={({ isActive }) =>
+                            `flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-[13px] font-medium transition ${
+                              isActive
+                                ? 'bg-primary-600 text-white'
+                                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                            }`
+                          }
+                        >
+                          <Icon className="h-3.5 w-3.5 shrink-0" />
+                          <span className="flex-1 truncate">{item.label}</span>
+                        </NavLink>
+                      )
+                    })}
+                  </div>
+                ) : null}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </nav>
 
         <div className="shrink-0 border-t border-slate-800 p-3">

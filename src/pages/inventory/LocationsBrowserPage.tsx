@@ -16,7 +16,7 @@ import { cn } from '@/lib/cn'
 
 type Level = 'floor' | 'rack'
 
-export function LocationsBrowserPage(props: { embedded?: boolean } = {}) {
+export function LocationsBrowserPage(props: { embedded?: boolean; mappingTitle?: string } = {}) {
   const [draft, setDraft] = useState('')
   const [search, setSearch] = useState('')
   const [level, setLevel] = useState<Level>('floor')
@@ -91,7 +91,11 @@ export function LocationsBrowserPage(props: { embedded?: boolean } = {}) {
 
   return (
     <div>
-      {props.embedded ? null : (
+      {props.embedded ? (
+        props.mappingTitle ? (
+          <p className="mb-3 text-sm font-semibold text-slate-700">Map · {props.mappingTitle}</p>
+        ) : null
+      ) : (
         <PageHeader
           title="Floor map"
           description="Interactive warehouse map using Quadrant.Aisle.Rack.Bay.Shelf codes (e.g. W.A.R1.B1.3)."

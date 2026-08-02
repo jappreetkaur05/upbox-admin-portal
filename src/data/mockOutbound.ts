@@ -455,7 +455,7 @@ export let outboundOrders: OutboundOrder[] = [
     lines: [line('l-1008-1', 'AD-NMD-42', 'Adidas NMD R1 42', 'brand-adidas', 1, 'W.A.R2.B3.1', 'EXCEPTION')],
     timeline: [
       { id: 't1', at: hoursAgo(9), label: 'Order created' },
-      { id: 't2', at: hoursAgo(0.8), label: 'Pick exception — short pick', actor: 'Ravi Pick' },
+      { id: 't2', at: hoursAgo(0.8), label: 'Pick exception — short pick', actor: 'Arjun Pick' },
     ],
   },
 ]
@@ -513,7 +513,7 @@ export let pickLists: PickList[] = [
     id: 'pl-1',
     waveId: 'wave-1',
     pickerId: 'w-pick-1',
-    pickerName: 'Ravi Pick',
+    pickerName: 'Arjun Pick',
     status: 'IN_PROGRESS',
     routeOptimized: true,
     zoneHint: 'B',
@@ -528,7 +528,7 @@ export let pickLists: PickList[] = [
     id: 'pl-1b',
     waveId: 'wave-1',
     pickerId: 'w-pick-2',
-    pickerName: 'Priya Pick',
+    pickerName: 'Diya Pick',
     status: 'ASSIGNED',
     routeOptimized: true,
     zoneHint: 'A',
@@ -542,7 +542,7 @@ export let pickLists: PickList[] = [
     id: 'pl-2',
     waveId: 'wave-2',
     pickerId: 'w-pick-2',
-    pickerName: 'Priya Pick',
+    pickerName: 'Diya Pick',
     status: 'COMPLETE',
     routeOptimized: true,
     zoneHint: null,
@@ -574,7 +574,7 @@ export let pickExceptions: PickException[] = [
     type: 'SHORT_PICK',
     status: 'OPEN',
     notes: 'Location empty — only 0 of 1 found',
-    raisedBy: 'Ravi Pick',
+    raisedBy: 'Arjun Pick',
     raisedAt: hoursAgo(0.8),
     replacementSku: null,
   },
@@ -701,7 +701,7 @@ export let inFieldShipments: InFieldShipment[] = [
 ]
 
 export let outboundActivity: OutboundActivity[] = [
-  { id: 'a1', at: hoursAgo(0.3), message: 'Priya Pick list pl-1b assigned — 2 stops open', tone: 'info' },
+  { id: 'a1', at: hoursAgo(0.3), message: 'Diya Pick list pl-1b assigned — 2 stops open', tone: 'info' },
   { id: 'a2', at: hoursAgo(0.8), message: 'Exception on OB-2026-1008 (short pick)', tone: 'warn' },
   { id: 'a3', at: hoursAgo(1.5), message: 'Route bag BAG-BANDRA-01 sealed — 2 orders', tone: 'success' },
   { id: 'a4', at: hoursAgo(2), message: 'OB-2026-1005 ready for Andheri route bag', tone: 'info' },
@@ -709,6 +709,6 @@ export let outboundActivity: OutboundActivity[] = [
 ]
 
 export const PICKERS = [
-  { id: 'w-pick-1', name: 'Ravi Pick', zones: ['A', 'B'] },
-  { id: 'w-pick-2', name: 'Priya Pick', zones: ['A', 'B'] },
+  { id: 'w-pick-1', name: 'Arjun Pick', zones: ['A', 'B'] },
+  { id: 'w-pick-2', name: 'Diya Pick', zones: ['A', 'B'] },
 ]

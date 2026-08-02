@@ -105,7 +105,9 @@ export interface SkuInventoryRow {
   onHand: number
   reserved: number
   available: number
+  damaged: number
   incoming: number
+  total: number
   locationCount: number
   primaryLocation: string | null
   locations: SkuLocationStock[]

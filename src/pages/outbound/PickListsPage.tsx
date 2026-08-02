@@ -13,8 +13,8 @@ import type { PickAssignStrategy, PickList } from '@/types/outbound'
 import { useToastStore } from '@/store/useToastStore'
 
 const PICKERS = [
-  { id: 'w-pick-1', name: 'Ravi Pick' },
-  { id: 'w-pick-2', name: 'Priya Pick' },
+  { id: 'w-pick-1', name: 'Arjun Pick' },
+  { id: 'w-pick-2', name: 'Diya Pick' },
 ]
 
 const STRATEGY_LABELS: Record<PickAssignStrategy, string> = {

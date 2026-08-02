@@ -43,19 +43,19 @@ const ACCOUNTS: Record<string, { password: string; workerId: string; name: strin
     'putaway2@upbox.test': {
       password: 'password123',
       workerId: 'w-put-2',
-      name: 'Priya Putaway',
+      name: 'Meera Putaway',
       defaultRole: 'PUTAWAY',
     },
     'pick@upbox.test': {
       password: 'password123',
       workerId: 'w-pick-1',
-      name: 'Ravi Pick',
+      name: 'Arjun Pick',
       defaultRole: 'PICKER',
     },
     'pick2@upbox.test': {
       password: 'password123',
       workerId: 'w-pick-2',
-      name: 'Priya Pick',
+      name: 'Diya Pick',
       defaultRole: 'PICKER',
     },
     'supervisor@upbox.test': {

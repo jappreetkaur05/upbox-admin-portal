@@ -38,10 +38,10 @@ export function DashboardPage() {
               Assign putaway
             </Link>
             <Link
-              to="/warehouse"
+              to="/warehouse/racks"
               className="cursor-pointer rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
-              Locations
+              Racks
             </Link>
             <Link
               to="/warehouse/moves"
